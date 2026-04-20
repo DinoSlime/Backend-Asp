@@ -1,7 +1,8 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Backend.Data;
 using Backend.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Controllers
 {
@@ -18,6 +19,7 @@ namespace Backend.Controllers
 
         // 1. Tạo sản phẩm mới (POST: api/products)
         [HttpPost]
+        [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> CreateProduct([FromBody] Product product)
         {
             try
@@ -94,6 +96,7 @@ namespace Backend.Controllers
 
         // 5. Xóa sản phẩm (DELETE: api/products/5)
         [HttpDelete("{id}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> DeleteProduct(int id)
         {
             var product = await _context.Products.FindAsync(id);
@@ -106,6 +109,7 @@ namespace Backend.Controllers
 
         // 6. Cập nhật sản phẩm (PUT: api/products/5)
         [HttpPut("{id}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product productData)
         {
             try

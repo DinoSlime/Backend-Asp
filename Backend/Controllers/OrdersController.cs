@@ -1,13 +1,15 @@
+using Backend.Data;
+using Backend.DTOs; // Sử dụng DTO vừa tạo
+using Backend.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Backend.Data;
-using Backend.Models;
-using Backend.DTOs; // Sử dụng DTO vừa tạo
 
 namespace Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class OrdersController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -54,6 +56,7 @@ namespace Backend.Controllers
 
         // 4. Admin lấy tất cả đơn hàng (GET: api/orders/admin/get-all)
         [HttpGet("admin/get-all")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> GetAllOrders()
         {
             return Ok(await _context.Orders.ToListAsync());
@@ -61,6 +64,7 @@ namespace Backend.Controllers
 
         // 5. Cập nhật trạng thái đơn (PUT: api/orders/admin/update-status/5?status=SHIPPING)
         [HttpPut("admin/update-status/{id}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> UpdateOrderStatus(int id, [FromQuery] string status)
         {
             try

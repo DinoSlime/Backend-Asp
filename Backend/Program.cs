@@ -2,9 +2,10 @@ using Backend.Data;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 using CloudinaryDotNet;
-using Microsoft.AspNetCore.Authentication.JwtBearer; // Thêm thư viện này
-using Microsoft.IdentityModel.Tokens; // Thêm thư viện này
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.OpenApi.Models; // 👈 Namespace quan trọng để cấu hình nút Authorize
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -48,10 +49,39 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 });
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+// 👇 5. CẤU HÌNH SWAGGER ĐỂ HIỆN NÚT AUTHORIZE (CÁI KHÓA)
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Nhập mã Token của bạn (Không cần gõ chữ Bearer)"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
+});
 
 var app = builder.Build();
 
+// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -60,13 +90,13 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// 👇 5. CẤU HÌNH CORS
+// 👇 6. CẤU HÌNH CORS (Cho phép React/React Native gọi API)
 app.UseCors(x => x
     .AllowAnyOrigin()
     .AllowAnyMethod()
     .AllowAnyHeader());
 
-// 👇 6. THỨ TỰ QUAN TRỌNG: Authentication trước, Authorization sau
+// 👇 7. THỨ TỰ QUAN TRỌNG: Authentication luôn phải đứng TRƯỚC Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 

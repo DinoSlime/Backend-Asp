@@ -1,11 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using CloudinaryDotNet;
+﻿using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class UploadsController : ControllerBase
     {
         private readonly Cloudinary _cloudinary;

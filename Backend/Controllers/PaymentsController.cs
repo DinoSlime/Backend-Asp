@@ -1,11 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Backend.DTOs;
+﻿using Backend.DTOs;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System.Web;
 
 namespace Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class PaymentsController : ControllerBase
     {
         [HttpPost("vietqr")]

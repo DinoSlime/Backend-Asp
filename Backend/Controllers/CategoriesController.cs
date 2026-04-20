@@ -1,7 +1,8 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Backend.Data;
 using Backend.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Controllers
 {
@@ -27,6 +28,7 @@ namespace Backend.Controllers
 
         // 2. Tạo mới danh mục (POST: api/categories)
         [HttpPost]
+        [Authorize(Roles = "ADMIN")]
         public async Task<ActionResult<Category>> CreateCategory([FromBody] Category category)
         {
             _context.Categories.Add(category);
@@ -36,6 +38,7 @@ namespace Backend.Controllers
 
         // 3. Cập nhật danh mục (PUT: api/categories/{id})
         [HttpPut("{id}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> UpdateCategory(int id, [FromBody] Category category)
         {
             var existingCategory = await _context.Categories.FindAsync(id);
@@ -53,6 +56,7 @@ namespace Backend.Controllers
 
         // 4. Xóa danh mục (DELETE: api/categories/{id})
         [HttpDelete("{id}")]
+        [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> DeleteCategory(int id)
         {
             var category = await _context.Categories.FindAsync(id);
