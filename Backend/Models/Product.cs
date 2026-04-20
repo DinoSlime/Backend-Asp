@@ -8,26 +8,27 @@ namespace Backend.Models
     public class Product : BaseEntity
     {
         [Column("name")]
-        [Required]
+        [Required(ErrorMessage = "Tên sản phẩm là bắt buộc")]
         [MaxLength(350)]
-        public string Name { get; set; }
+        public string Name { get; set; } // Bắt buộc phải có tên
 
         [Column("price")]
-        public decimal Price { get; set; } // Tiếp tục dùng decimal thay vì Float cho tiền tệ
+        public decimal Price { get; set; } // Bắt buộc phải có giá
 
         [Column("thumbnail")]
-        public string Thumbnail { get; set; }
+        // 👇 Thêm dấu ? để cho phép rỗng khi chưa upload ảnh
+        public string? Thumbnail { get; set; }
 
-        // 👇 Xử lý kiểu TEXT cho SQL Server
         [Column("description", TypeName = "nvarchar(max)")]
-        public string Description { get; set; }
+        // 👇 Thêm dấu ? để cho phép rỗng
+        public string? Description { get; set; }
 
-        // 👇 Mối quan hệ Many-To-One với Category
         [Column("category_id")]
-        public long CategoryId { get; set; }
+        public long CategoryId { get; set; } // Chỉ cần ID là đủ
 
         [ForeignKey("CategoryId")]
-        public Category Category { get; set; } // Navigation property
+        // 👇 ĐÂY LÀ DÒNG CHỮA LỖI: Thêm dấu ? để .NET không đòi cả Object Category nữa
+        public Category? Category { get; set; }
 
         // 👇 Mối quan hệ One-To-Many với ProductVariant
         public ICollection<ProductVariant> Variants { get; set; } = new List<ProductVariant>();
