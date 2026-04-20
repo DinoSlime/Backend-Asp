@@ -62,7 +62,7 @@ namespace Backend.Controllers
 
         // 3. Lấy chi tiết sản phẩm theo ID (GET: api/products/5)
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetProductById(int id)
+        public async Task<IActionResult> GetProductById(long id)
         {
             var product = await _context.Products
                 .Include(p => p.Variants) // Phải Include mới lấy được chi tiết Variants
@@ -106,7 +106,7 @@ namespace Backend.Controllers
         // 5. Xóa sản phẩm (DELETE: api/products/5)
         [HttpDelete("{id}")]
         [Authorize(Roles = "ADMIN")]
-        public async Task<IActionResult> DeleteProduct(int id)
+        public async Task<IActionResult> DeleteProduct(long id)
         {
             var product = await _context.Products.FindAsync(id);
             if (product == null) return NotFound();
@@ -120,7 +120,7 @@ namespace Backend.Controllers
         // 6. Cập nhật sản phẩm & Variants (PUT: api/products/5)
         [HttpPut("{id}")]
         [Authorize(Roles = "ADMIN")]
-        public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product productData)
+        public async Task<IActionResult> UpdateProduct(long id, [FromBody] Product productData)
         {
             try
             {
