@@ -1,6 +1,10 @@
-using Backend.Data; // Nhúng thư mục Data
-using Microsoft.EntityFrameworkCore; // Để dùng được UseSqlServer
-using System.Text.Json.Serialization; // Để sửa lỗi vòng lặp JSON
+using Backend.Data;
+using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
+using CloudinaryDotNet;
+using Microsoft.AspNetCore.Authentication.JwtBearer; // Thêm thư viện này
+using Microsoft.IdentityModel.Tokens; // Thêm thư viện này
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,20 +12,46 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// 👇 2. CẤU HÌNH CONTROLLER VÀ SỬA LỖI VÒNG LẶP JSON
+// 👇 2. CẤU HÌNH CLOUDINARY
+var cloudinaryAccount = new Account(
+    builder.Configuration["CloudinarySettings:CloudName"],
+    builder.Configuration["CloudinarySettings:ApiKey"],
+    builder.Configuration["CloudinarySettings:ApiSecret"]
+);
+Cloudinary cloudinary = new Cloudinary(cloudinaryAccount);
+builder.Services.AddSingleton(cloudinary);
+
+// 👇 3. CẤU HÌNH XÁC THỰC JWT
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+    };
+});
+
+// 👇 4. CẤU HÌNH CONTROLLER VÀ SỬA LỖI VÒNG LẶP JSON
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
-    // Cực kỳ quan trọng: Lệnh này thay thế hoàn toàn @JsonManagedReference và @JsonBackReference của Java
     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
 });
 
-// Cấu hình Swagger (Tài liệu API)
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -29,7 +59,17 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// 👇 5. CẤU HÌNH CORS
+app.UseCors(x => x
+    .AllowAnyOrigin()
+    .AllowAnyMethod()
+    .AllowAnyHeader());
+
+// 👇 6. THỨ TỰ QUAN TRỌNG: Authentication trước, Authorization sau
+app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
 
 app.Run();

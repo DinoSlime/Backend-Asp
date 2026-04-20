@@ -1,12 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Backend.Data;
 using Backend.Models;
+using Backend.DTOs;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace Backend.Controllers
 {
@@ -15,94 +15,105 @@ namespace Backend.Controllers
     public class UsersController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly IConfiguration _configuration; // 👇 Thêm cấu hình
 
-        public UsersController(ApplicationDbContext context)
+        public UsersController(ApplicationDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration; // 👇 Inject Configuration
         }
 
-        // GET: api/Users
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<User>>> GetUsers()
+        // 1. Đăng ký (POST: api/users/register)
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] UserRegisterDTO dto)
         {
-            return await _context.Users.ToListAsync();
-        }
-
-        // GET: api/Users/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<User>> GetUser(long id)
-        {
-            var user = await _context.Users.FindAsync(id);
-
-            if (user == null)
-            {
-                return NotFound();
-            }
-
-            return user;
-        }
-
-        // PUT: api/Users/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutUser(long id, User user)
-        {
-            if (id != user.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(user).State = EntityState.Modified;
-
             try
             {
+                if (dto.Password != dto.RetypePassword)
+                    return BadRequest("Mật khẩu xác nhận không khớp!");
+
+                if (await _context.Users.AnyAsync(u => u.Username == dto.Username))
+                    return BadRequest("Tên tài khoản đã tồn tại!");
+
+                var user = new User
+                {
+                    FullName = dto.FullName,
+                    Username = dto.Username,
+                    Password = dto.Password,
+                    PhoneNumber = dto.PhoneNumber,
+                    Address = dto.Address,
+                    RoleId = 2
+                };
+
+                _context.Users.Add(user);
                 await _context.SaveChangesAsync();
+
+                return Ok(user);
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception e)
             {
-                if (!UserExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return BadRequest(e.Message);
             }
-
-            return NoContent();
         }
 
-        // POST: api/Users
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<User>> PostUser(User user)
+        // 2. Đăng nhập (POST: api/users/login)
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] UserLoginDTO dto)
         {
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetUser", new { id = user.Id }, user);
-        }
-
-        // DELETE: api/Users/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUser(long id)
-        {
-            var user = await _context.Users.FindAsync(id);
-            if (user == null)
+            try
             {
-                return NotFound();
+                var user = await _context.Users
+                    .Include(u => u.Role)
+                    .FirstOrDefaultAsync(u => u.Username == dto.Username && u.Password == dto.Password);
+
+                if (user == null)
+                    return BadRequest("Sai tài khoản hoặc mật khẩu!");
+
+                // 👇 2. TẠO TOKEN THẬT
+                string token = GenerateJwtToken(user);
+
+                // 3. Trả về kết quả
+                var result = new
+                {
+                    token = token,
+                    user = new
+                    {
+                        id = user.Id,
+                        username = user.Username,
+                        fullName = user.FullName,
+                        role = user.Role?.Name?.ToUpper() ?? "USER"
+                    }
+                };
+
+                return Ok(result);
             }
-
-            _context.Users.Remove(user);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
         }
 
-        private bool UserExists(long id)
+        // 👇 HÀM TẠO TOKEN (Viết riêng để tái sử dụng)
+        private string GenerateJwtToken(User user)
         {
-            return _context.Users.Any(e => e.Id == id);
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Name, user.Username),
+                new Claim(ClaimTypes.Role, user.Role?.Name ?? "USER")
+            };
+
+            var token = new JwtSecurityToken(
+                issuer: _configuration["Jwt:Issuer"],
+                audience: _configuration["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.Now.AddDays(7),
+                signingCredentials: credentials);
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }

@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Backend.Data;
@@ -10,99 +5,66 @@ using Backend.Models;
 
 namespace Backend.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
+    [Route("api/[controller]")] // Tương đương @RequestMapping("api/categories")
+    [ApiController] // Tương đương @RestController
     public class CategoriesController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
 
+        // Dependency Injection tương đương @RequiredArgsConstructor
         public CategoriesController(ApplicationDbContext context)
         {
             _context = context;
         }
 
-        // GET: api/Categories
+        // 1. Lấy tất cả danh mục (GET: api/categories)
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Category>>> GetCategories()
+        public async Task<ActionResult<IEnumerable<Category>>> GetAllCategories()
         {
+            // Tương đương categoryService.getAllCategories()
             return await _context.Categories.ToListAsync();
         }
 
-        // GET: api/Categories/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Category>> GetCategory(long id)
-        {
-            var category = await _context.Categories.FindAsync(id);
-
-            if (category == null)
-            {
-                return NotFound();
-            }
-
-            return category;
-        }
-
-        // PUT: api/Categories/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutCategory(long id, Category category)
-        {
-            if (id != category.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(category).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!CategoryExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
-        // POST: api/Categories
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        // 2. Tạo mới danh mục (POST: api/categories)
         [HttpPost]
-        public async Task<ActionResult<Category>> PostCategory(Category category)
+        public async Task<ActionResult<Category>> CreateCategory([FromBody] Category category)
         {
             _context.Categories.Add(category);
             await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetCategory", new { id = category.Id }, category);
+            return Ok(category);
         }
 
-        // DELETE: api/Categories/5
+        // 3. Cập nhật danh mục (PUT: api/categories/{id})
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateCategory(int id, [FromBody] Category category)
+        {
+            var existingCategory = await _context.Categories.FindAsync(id);
+            if (existingCategory == null)
+            {
+                return NotFound("Không tìm thấy danh mục");
+            }
+
+            // Cập nhật thông tin (Giả sử bảng Category có trường Name)
+            existingCategory.Name = category.Name;
+
+            await _context.SaveChangesAsync();
+            return Ok(existingCategory);
+        }
+
+        // 4. Xóa danh mục (DELETE: api/categories/{id})
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteCategory(long id)
+        public async Task<IActionResult> DeleteCategory(int id)
         {
             var category = await _context.Categories.FindAsync(id);
             if (category == null)
             {
-                return NotFound();
+                return NotFound("Không tìm thấy danh mục");
             }
 
             _context.Categories.Remove(category);
             await _context.SaveChangesAsync();
 
-            return NoContent();
-        }
-
-        private bool CategoryExists(long id)
-        {
-            return _context.Categories.Any(e => e.Id == id);
+            return Ok($"Xóa thành công danh mục có ID: {id}");
         }
     }
 }
