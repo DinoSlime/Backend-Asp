@@ -208,5 +208,32 @@ namespace Backend.Controllers
                 return BadRequest(new { message = e.Message });
             }
         }
+
+        // Thêm hàm này vào OrdersController.cs
+        [HttpPut("confirm-payment/{id}")]
+        [Authorize] // Chỉ cần đăng nhập là được, không cần role ADMIN
+        public async Task<IActionResult> ConfirmPayment(long id)
+        {
+            try
+            {
+                var order = await _context.Orders.FindAsync(id);
+                if (order == null) return NotFound(new { message = "Đơn hàng không tồn tại" });
+
+                // Có thể thêm kiểm tra: chỉ cho phép xác nhận nếu đang ở trạng thái PENDING
+                if (order.Status != "PENDING")
+                {
+                    return BadRequest(new { message = "Đơn hàng này không ở trạng thái chờ thanh toán" });
+                }
+
+                order.Status = "WAITING_CONFIRM";
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "Đã gửi yêu cầu xác nhận thanh toán" });
+            }
+            catch (Exception e)
+            {
+                return BadRequest(new { message = e.Message });
+            }
+        }
     }
 }
