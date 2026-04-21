@@ -2,7 +2,7 @@
 {
     public class OrderDTO
     {
-        public int? UserId { get; set; }
+        public long? UserId { get; set; }
         public string FullName { get; set; } = string.Empty;
         public string PhoneNumber { get; set; } = string.Empty;
         public string Address { get; set; } = string.Empty;
@@ -15,8 +15,8 @@
 
     public class OrderDetailDTO
     {
-        public int ProductId { get; set; }
-        public int VariantId { get; set; } // Chứa size/color
+        public long ProductId { get; set; }
+        public long VariantId { get; set; } // Chứa size/color
         public decimal Price { get; set; }
         public int Quantity { get; set; }
     }

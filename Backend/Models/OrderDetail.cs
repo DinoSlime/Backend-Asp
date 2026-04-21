@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization; // 👇 BẮT BUỘC THÊM ĐỂ DÙNG JsonIgnore và JsonPropertyName
 
 namespace Backend.Models
 {
@@ -15,30 +16,34 @@ namespace Backend.Models
         public long OrderId { get; set; }
 
         [ForeignKey("OrderId")]
-        public Order Order { get; set; } // Navigation property
+        [JsonIgnore] // Tránh đệ quy vô tận
+        public Order? Order { get; set; } // Thêm ? cho phép null từ request
 
         // 👇 2. Mối quan hệ với Product (Sản phẩm gốc)
         [Column("product_id")]
         public long ProductId { get; set; }
 
         [ForeignKey("ProductId")]
-        public Product Product { get; set; }
+       
+        public Product? Product { get; set; }
 
         // 👇 3. Mối quan hệ với ProductVariant (Phân loại Size/Màu)
         [Column("variant_id")]
         public long VariantId { get; set; }
 
         [ForeignKey("VariantId")]
-        public ProductVariant Variant { get; set; }
+       
+        public ProductVariant? Variant { get; set; }
 
         // 👇 4. Các trường dữ liệu tính toán
         [Column("price")]
-        public decimal Price { get; set; } // C# dùng decimal cho tiền tệ, thay vì Float
+        public decimal Price { get; set; }
 
         [Column("number_of_products")]
+        [JsonPropertyName("quantity")] // 👇 Ép C# hiểu chữ "quantity" từ React gửi lên
         public int NumberOfProducts { get; set; }
 
         [Column("total_money")]
-        public decimal TotalMoney { get; set; } // = Price * NumberOfProducts
+        public decimal TotalMoney { get; set; }
     }
 }

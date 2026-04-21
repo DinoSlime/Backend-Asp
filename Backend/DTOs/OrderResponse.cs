@@ -5,7 +5,7 @@ namespace Backend.DTOs
     public class OrderResponse
     {
         [JsonPropertyName("id")]
-        public int Id { get; set; }
+        public long Id { get; set; }
 
         // Gộp logic ánh xạ total_money và totalMoney vào đây
         [JsonPropertyName("total_money")]

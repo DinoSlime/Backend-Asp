@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization; // 👇 BẮT BUỘC THÊM THƯ VIỆN NÀY ĐỂ DÙNG [JsonIgnore]
 
 namespace Backend.Models
 {
@@ -10,11 +11,12 @@ namespace Backend.Models
     {
         [Column("fullname")]
         [MaxLength(100)]
+       
         public string FullName { get; set; }
 
         [Column("email")]
         [MaxLength(100)]
-        public string Email { get; set; }
+        public string? Email { get; set; } // Thêm ? vì khách hàng có thể không nhập Email
 
         [Column("phone_number")]
         [Required]
@@ -23,34 +25,34 @@ namespace Backend.Models
 
         [Column("address")]
         [Required]
-        [MaxLength(255)] // Tăng lên 255 theo ý bạn
+        [MaxLength(255)]
         public string Address { get; set; }
 
         [Column("note")]
         [MaxLength(255)]
-        public string Note { get; set; }
+        public string? Note { get; set; } // Thêm ? vì ghi chú là tùy chọn
 
         [Column("order_date")]
-        public DateTime OrderDate { get; set; } // DateTime của C# thay cho LocalDateTime
+        public DateTime OrderDate { get; set; }
 
         [Column("status")]
-        public string Status { get; set; } // PENDING, SHIPPING, DELIVERED, CANCELLED
+        public string? Status { get; set; } // Thêm ? để tránh lỗi khi mới tạo chưa set status
 
         [Column("total_money")]
-        public decimal TotalMoney { get; set; } // 💡 C# chuộng dùng decimal cho tiền tệ thay vì float
+        public decimal TotalMoney { get; set; }
 
         [Column("payment_method")]
-        public string PaymentMethod { get; set; } // COD, BANK
+        public string PaymentMethod { get; set; }
 
-        // 👇 QUAN TRỌNG 1: Mối quan hệ Many-To-One với User
+        // 👇 Mối quan hệ Many-To-One với User
         [Column("user_id")]
-        public long? UserId { get; set; } // Dấu ? biểu thị cho phép Null (khách vãng lai)
+        public long? UserId { get; set; }
 
         [ForeignKey("UserId")]
-        public User User { get; set; } // Navigation property (Thuộc tính điều hướng)
+        [JsonIgnore] // 👇 QUAN TRỌNG NHẤT: Tránh lỗi vòng lặp và không bắt React phải gửi cục User
+        public User? User { get; set; } // Thêm dấu ?
 
-        // 👇 QUAN TRỌNG 2: Mối quan hệ One-To-Many với chi tiết đơn hàng
-        // Trong C#, thường dùng ICollection thay vì List cho các mối quan hệ
+        // Mối quan hệ One-To-Many với chi tiết đơn hàng (Giữ nguyên để nhận danh sách từ React)
         public ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
     }
 }

@@ -49,12 +49,15 @@ namespace Backend.Controllers
 
                 foreach (var itemDTO in orderDTO.OrderDetails)
                 {
-                    // Lấy sản phẩm và biến thể
-                    var product = await _context.Products.FindAsync(itemDTO.ProductId);
-                    if (product == null) throw new Exception($"Không tìm thấy sản phẩm ID: {itemDTO.ProductId}");
+                    // 👇 Ép kiểu sang long để FindAsync không bị lỗi ném ra ngoại lệ
+                    long pId = (long)itemDTO.ProductId;
+                    long vId = (long)itemDTO.VariantId;
 
-                    var variant = await _context.ProductVariants.FindAsync(itemDTO.VariantId);
-                    if (variant == null) throw new Exception($"Không tìm thấy biến thể ID: {itemDTO.VariantId}");
+                    var product = await _context.Products.FindAsync(pId);
+                    if (product == null) throw new Exception($"Không tìm thấy sản phẩm ID: {pId}");
+
+                    var variant = await _context.ProductVariants.FindAsync(vId);
+                    if (variant == null) throw new Exception($"Không tìm thấy biến thể ID: {vId}");
 
                     // CHECK TỒN KHO & TRỪ KHO
                     if (variant.Stock < itemDTO.Quantity)
@@ -91,13 +94,13 @@ namespace Backend.Controllers
             {
                 // Nếu có bất kỳ lỗi gì (vd: hết hàng), hủy bỏ toàn bộ thay đổi
                 await transaction.RollbackAsync();
-                return BadRequest(e.Message);
+                return BadRequest(new { message = e.Message });
             }
         }
 
         // 2. Lấy đơn hàng theo User ID
         [HttpGet("user/{userId}")]
-        public async Task<IActionResult> GetOrdersByUser(int userId)
+        public async Task<IActionResult> GetOrdersByUser(long userId) // 👇 Sửa int thành long
         {
             var orders = await _context.Orders
                 .Include(o => o.OrderDetails) // Lấy kèm chi tiết món hàng
@@ -113,7 +116,7 @@ namespace Backend.Controllers
 
         // 3. Lấy chi tiết 1 đơn hàng
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetOrderById(int id)
+        public async Task<IActionResult> GetOrderById(long id) // 👇 Sửa int thành long
         {
             var order = await _context.Orders
                 .Include(o => o.OrderDetails)
@@ -122,7 +125,7 @@ namespace Backend.Controllers
                     .ThenInclude(od => od.Variant)
                 .FirstOrDefaultAsync(o => o.Id == id);
 
-            if (order == null) return NotFound("Không tìm thấy đơn hàng");
+            if (order == null) return NotFound(new { message = "Không tìm thấy đơn hàng" });
             return Ok(order);
         }
 
@@ -140,12 +143,12 @@ namespace Backend.Controllers
         // 5. Cập nhật trạng thái đơn hàng
         [HttpPut("admin/update-status/{id}")]
         [Authorize(Roles = "ADMIN")]
-        public async Task<IActionResult> UpdateOrderStatus(int id, [FromQuery] string status)
+        public async Task<IActionResult> UpdateOrderStatus(long id, [FromQuery] string status) // 👇 Sửa int thành long
         {
             try
             {
                 var order = await _context.Orders.FindAsync(id);
-                if (order == null) return NotFound("Đơn hàng không tồn tại");
+                if (order == null) return NotFound(new { message = "Đơn hàng không tồn tại" });
 
                 order.Status = status;
                 await _context.SaveChangesAsync();
@@ -154,7 +157,7 @@ namespace Backend.Controllers
             }
             catch (Exception e)
             {
-                return BadRequest(e.Message);
+                return BadRequest(new { message = e.Message });
             }
         }
     }

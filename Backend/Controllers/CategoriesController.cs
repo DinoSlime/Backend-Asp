@@ -29,7 +29,7 @@ namespace Backend.Controllers
         // 2. Lấy chi tiết danh mục theo ID (GET: api/categories/{id}) 
         // 👇 ĐÂY LÀ PHẦN BỔ SUNG TỪ BÊN JAVA SANG
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetCategoryById(int id)
+        public async Task<IActionResult> GetCategoryById(long id)
         {
             var category = await _context.Categories.FindAsync(id);
             if (category == null)
@@ -52,7 +52,7 @@ namespace Backend.Controllers
         // 4. Cập nhật danh mục (PUT: api/categories/{id})
         [HttpPut("{id}")]
         [Authorize(Roles = "ADMIN")]
-        public async Task<IActionResult> UpdateCategory(int id, [FromBody] Category categoryDetails)
+        public async Task<IActionResult> UpdateCategory(long id, [FromBody] Category categoryDetails)
         {
             var existingCategory = await _context.Categories.FindAsync(id);
             if (existingCategory == null)
@@ -70,7 +70,7 @@ namespace Backend.Controllers
         // 5. Xóa danh mục (DELETE: api/categories/{id})
         [HttpDelete("{id}")]
         [Authorize(Roles = "ADMIN")]
-        public async Task<IActionResult> DeleteCategory(int id)
+        public async Task<IActionResult> DeleteCategory(long id)
         {
             var category = await _context.Categories.FindAsync(id);
             if (category == null)
