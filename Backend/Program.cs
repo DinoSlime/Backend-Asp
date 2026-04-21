@@ -45,7 +45,7 @@ builder.Services.AddAuthentication(options =>
 // 👇 4. CẤU HÌNH CONTROLLER VÀ SỬA LỖI VÒNG LẶP JSON
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
-    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
 });
 
 builder.Services.AddEndpointsApiExplorer();

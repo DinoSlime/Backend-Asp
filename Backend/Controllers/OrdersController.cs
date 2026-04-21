@@ -23,11 +23,9 @@ namespace Backend.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateOrder([FromBody] OrderDTO orderDTO)
         {
-            // Bắt đầu Transaction: Đảm bảo nếu lỗi ở bước cuối thì rollback lại toàn bộ
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                // 1. Tạo Order (Bảng cha)
                 var order = new Order
                 {
                     UserId = orderDTO.UserId,
@@ -42,14 +40,12 @@ namespace Backend.Controllers
                 };
 
                 _context.Orders.Add(order);
-                await _context.SaveChangesAsync(); // Lưu để lấy Id của Order
+                await _context.SaveChangesAsync();
 
-                // 2. Xử lý từng món hàng và Trừ Kho
                 var details = new List<OrderDetail>();
 
                 foreach (var itemDTO in orderDTO.OrderDetails)
                 {
-                    // 👇 Ép kiểu sang long để FindAsync không bị lỗi ném ra ngoại lệ
                     long pId = (long)itemDTO.ProductId;
                     long vId = (long)itemDTO.VariantId;
 
@@ -59,16 +55,14 @@ namespace Backend.Controllers
                     var variant = await _context.ProductVariants.FindAsync(vId);
                     if (variant == null) throw new Exception($"Không tìm thấy biến thể ID: {vId}");
 
-                    // CHECK TỒN KHO & TRỪ KHO
                     if (variant.Stock < itemDTO.Quantity)
                     {
                         throw new Exception($"Sản phẩm {product.Name} (Size: {variant.Size}) không đủ hàng! Còn lại: {variant.Stock}");
                     }
 
-                    variant.Stock -= itemDTO.Quantity; // Trừ kho
+                    variant.Stock -= itemDTO.Quantity;
                     _context.ProductVariants.Update(variant);
 
-                    // Tạo OrderDetail (Bảng con)
                     var detail = new OrderDetail
                     {
                         OrderId = order.Id,
@@ -81,18 +75,14 @@ namespace Backend.Controllers
                     details.Add(detail);
                 }
 
-                // Lưu danh sách chi tiết đơn hàng
                 _context.OrderDetails.AddRange(details);
                 await _context.SaveChangesAsync();
-
-                // Xác nhận thành công toàn bộ quá trình
                 await transaction.CommitAsync();
 
                 return Ok(order);
             }
             catch (Exception e)
             {
-                // Nếu có bất kỳ lỗi gì (vd: hết hàng), hủy bỏ toàn bộ thay đổi
                 await transaction.RollbackAsync();
                 return BadRequest(new { message = e.Message });
             }
@@ -100,33 +90,77 @@ namespace Backend.Controllers
 
         // 2. Lấy đơn hàng theo User ID
         [HttpGet("user/{userId}")]
-        public async Task<IActionResult> GetOrdersByUser(long userId) // 👇 Sửa int thành long
+        public async Task<IActionResult> GetOrdersByUser(long userId)
         {
             var orders = await _context.Orders
-                .Include(o => o.OrderDetails) // Lấy kèm chi tiết món hàng
-                    .ThenInclude(od => od.Product) // Lấy kèm thông tin sản phẩm trong chi tiết
-                .Include(o => o.OrderDetails)
-                    .ThenInclude(od => od.Variant) // Lấy kèm size/màu
+                .Include(o => o.OrderDetails).ThenInclude(od => od.Product)
+                .Include(o => o.OrderDetails).ThenInclude(od => od.Variant)
                 .Where(o => o.UserId == userId)
                 .OrderByDescending(o => o.Id)
                 .ToListAsync();
 
-            return Ok(orders);
+            // 👇 LỌC DỮ LIỆU ĐỂ TRÁNH LỖI VÒNG LẶP JSON
+            var cleanOrders = orders.Select(order => new
+            {
+                id = order.Id,
+                fullName = order.FullName,
+                customerName = order.FullName,
+                phoneNumber = order.PhoneNumber,
+                address = order.Address,
+                totalMoney = order.TotalMoney,
+                orderDate = order.OrderDate,
+                status = order.Status,
+                paymentMethod = order.PaymentMethod,
+                orderDetails = order.OrderDetails.Select(od => new
+                {
+                    id = od.Id,
+                    price = od.Price,
+                    quantity = od.NumberOfProducts,
+                    totalMoney = od.TotalMoney,
+                    product = od.Product == null ? null : new { id = od.Product.Id, name = od.Product.Name, thumbnail = od.Product.Thumbnail },
+                    variant = od.Variant == null ? null : new { id = od.Variant.Id, size = od.Variant.Size, color = od.Variant.Color }
+                }).ToList()
+            });
+
+            return Ok(cleanOrders);
         }
 
         // 3. Lấy chi tiết 1 đơn hàng
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetOrderById(long id) // 👇 Sửa int thành long
+        public async Task<IActionResult> GetOrderById(long id)
         {
             var order = await _context.Orders
-                .Include(o => o.OrderDetails)
-                    .ThenInclude(od => od.Product)
-                .Include(o => o.OrderDetails)
-                    .ThenInclude(od => od.Variant)
+                .Include(o => o.OrderDetails).ThenInclude(od => od.Product)
+                .Include(o => o.OrderDetails).ThenInclude(od => od.Variant)
                 .FirstOrDefaultAsync(o => o.Id == id);
 
             if (order == null) return NotFound(new { message = "Không tìm thấy đơn hàng" });
-            return Ok(order);
+
+            // 👇 LỌC DỮ LIỆU ĐỂ TRÁNH LỖI VÒNG LẶP JSON VÀ ÉP CHUẨN TÊN BIẾN
+            var cleanData = new
+            {
+                id = order.Id,
+                fullName = order.FullName,
+                customerName = order.FullName, // Truyền 2 tên để đảm bảo React luôn đọc được
+                phoneNumber = order.PhoneNumber,
+                address = order.Address,
+                note = order.Note,
+                orderDate = order.OrderDate,
+                status = order.Status,
+                totalMoney = order.TotalMoney, // Biến này sẽ giúp mã QR hiện đúng tiền
+                paymentMethod = order.PaymentMethod,
+                orderDetails = order.OrderDetails.Select(od => new
+                {
+                    id = od.Id,
+                    price = od.Price,
+                    quantity = od.NumberOfProducts,
+                    totalMoney = od.TotalMoney,
+                    product = od.Product == null ? null : new { id = od.Product.Id, name = od.Product.Name, thumbnail = od.Product.Thumbnail },
+                    variant = od.Variant == null ? null : new { id = od.Variant.Id, size = od.Variant.Size, color = od.Variant.Color }
+                }).ToList()
+            };
+
+            return Ok(cleanData);
         }
 
         // 4. Admin lấy tất cả đơn hàng
@@ -135,15 +169,29 @@ namespace Backend.Controllers
         public async Task<IActionResult> GetAllOrders()
         {
             var orders = await _context.Orders
-                .OrderByDescending(o => o.Id) // Sắp xếp mới nhất lên đầu
+                .OrderByDescending(o => o.Id)
                 .ToListAsync();
-            return Ok(orders);
+
+            // 👇 LỌC DỮ LIỆU CHO ADMIN (Chặn đứng lỗi trắng trang)
+            var cleanOrders = orders.Select(o => new {
+                id = o.Id,
+                customerName = o.FullName,
+                fullName = o.FullName,
+                phoneNumber = o.PhoneNumber,
+                address = o.Address,
+                totalMoney = o.TotalMoney,
+                orderDate = o.OrderDate,
+                status = o.Status,
+                paymentMethod = o.PaymentMethod
+            });
+
+            return Ok(cleanOrders);
         }
 
         // 5. Cập nhật trạng thái đơn hàng
         [HttpPut("admin/update-status/{id}")]
         [Authorize(Roles = "ADMIN")]
-        public async Task<IActionResult> UpdateOrderStatus(long id, [FromQuery] string status) // 👇 Sửa int thành long
+        public async Task<IActionResult> UpdateOrderStatus(long id, [FromQuery] string status)
         {
             try
             {
