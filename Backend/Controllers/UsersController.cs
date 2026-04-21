@@ -30,30 +30,34 @@ namespace Backend.Controllers
         {
             try
             {
-                // 1. Kiểm tra mật khẩu khớp
+                // 1. Kiểm tra mật khẩu khớp (Đã comment theo yêu cầu)
+                /*
                 if (dto.Password != dto.RetypePassword)
                     return BadRequest("Mật khẩu xác nhận không khớp!");
+                */
 
                 // 2. Kiểm tra username tồn tại
                 if (await _context.Users.AnyAsync(u => u.Username == dto.Username))
                     return BadRequest("Tên tài khoản đã tồn tại!");
 
                 // 3. Kiểm tra xem Role USER (Id = 2) có tồn tại trong DB chưa
-                var defaultRole = await _context.Roles.FindAsync(2);
+                // ✅ Đã sửa: Dùng 2L để khớp kiểu dữ liệu long
+                var defaultRole = await _context.Roles.FindAsync(2L);
                 if (defaultRole == null)
                 {
                     return BadRequest("Hệ thống chưa cấu hình Role USER (ID=2). Vui lòng chèn Role vào DB trước!");
                 }
 
-                // 4. Map DTO sang Entity - LUÔN GÁN ROLEID = 2 (USER)
+                // 4. Map DTO sang Entity
                 var user = new User
                 {
                     FullName = dto.FullName,
                     Username = dto.Username,
-                    Password = dto.Password, // Lưu ý: Nên dùng BCrypt để Hash sau này
+                    Password = dto.Password,
                     PhoneNumber = dto.PhoneNumber,
                     Address = dto.Address,
-                    RoleId = 2 // 👈 MẶC ĐỊNH LUÔN LÀ USER KHI ĐĂNG KÝ
+                    RoleId = 2L, // ✅ Đã sửa: Dùng 2L cho kiểu dữ liệu long
+                    IsActive = true
                 };
 
                 _context.Users.Add(user);
@@ -79,6 +83,9 @@ namespace Backend.Controllers
 
                 if (user == null)
                     return BadRequest("Sai tài khoản hoặc mật khẩu!");
+
+                if (!user.IsActive)
+                    return BadRequest("Tài khoản của bạn đã bị khóa!");
 
                 string token = GenerateJwtToken(user);
 
@@ -117,6 +124,7 @@ namespace Backend.Controllers
                         u.Username,
                         u.PhoneNumber,
                         u.Address,
+                        u.IsActive,
                         RoleName = u.Role != null ? u.Role.Name : "N/A"
                     })
                     .ToListAsync();
@@ -127,6 +135,37 @@ namespace Backend.Controllers
             {
                 return BadRequest(e.Message);
             }
+        }
+
+        // 4. Xóa người dùng (DELETE: api/users/{id})
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "ADMIN")]
+        public async Task<IActionResult> DeleteUser(long id)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null) return NotFound("Người dùng không tồn tại");
+
+            _context.Users.Remove(user);
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Xóa người dùng thành công" });
+        }
+
+        // 5. Cập nhật thông tin (PUT: api/users/{id})
+        [HttpPut("{id}")]
+        [Authorize(Roles = "ADMIN")]
+        public async Task<IActionResult> UpdateUser(long id, [FromBody] User updatedData)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null) return NotFound("Người dùng không tồn tại");
+
+            user.FullName = updatedData.FullName;
+            user.PhoneNumber = updatedData.PhoneNumber;
+            user.Address = updatedData.Address;
+            user.RoleId = updatedData.RoleId;
+            user.IsActive = updatedData.IsActive;
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Cập nhật thành công" });
         }
 
         // 👇 HÀM TẠO TOKEN

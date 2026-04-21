@@ -44,12 +44,11 @@ namespace Backend.Controllers
             // Lấy tổng số để làm phân trang
             var total = await _context.Products.CountAsync();
 
-            var products = await _context.Products
-                .Include(p => p.Category) // 👈 Quan trọng: Để lấy được "category": { "name": "Nike", ... }
-                .Include(p => p.Variants) // Đã có rồi nên JSON mới hiện variants
-                .Skip(page * limit)
-                .Take(limit)
-                .ToListAsync();
+                var products = await _context.Products
+            .Include(p => p.Category)
+            .Include(p => p.Variants)
+            .OrderByDescending(p => p.Id) // 👈 Sản phẩm ID lớn nhất (mới nhất) sẽ lên đầu
+            .ToListAsync();
 
             return Ok(new
             {
