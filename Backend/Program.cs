@@ -5,7 +5,10 @@ using CloudinaryDotNet;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using Microsoft.OpenApi.Models; // 👈 Namespace quan trọng để cấu hình nút Authorize
+using Microsoft.OpenApi.Models;
+
+// ✅ BƯỚC QUAN TRỌNG: Đặt dòng này ở ngay đầu tiên để xử lý lỗi DateTime với Postgres
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,7 +53,7 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 
 builder.Services.AddEndpointsApiExplorer();
 
-// 👇 5. CẤU HÌNH SWAGGER ĐỂ HIỆN NÚT AUTHORIZE (CÁI KHÓA)
+// 👇 5. CẤU HÌNH SWAGGER ĐỂ HIỆN NÚT AUTHORIZE
 builder.Services.AddSwaggerGen(options =>
 {
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -81,23 +84,23 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// ĐOẠN CODE MỚI (Mở khóa Swagger mọi lúc mọi nơi)
+// Mở khóa Swagger
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
-    // Cấu hình thêm dòng này để nó load thẳng vào trang chủ luôn nếu thích
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "API Bán Giày V1");
 });
 
-app.UseHttpsRedirection();
+// ✅ BỎ UseHttpsRedirection khi chạy trên Render để tránh lỗi vòng lặp chuyển hướng (Nếu cần)
+// app.UseHttpsRedirection();
 
-// 👇 6. CẤU HÌNH CORS (Cho phép React/React Native gọi API)
+// 👇 6. CẤU HÌNH CORS
 app.UseCors(x => x
     .AllowAnyOrigin()
     .AllowAnyMethod()
     .AllowAnyHeader());
 
-// 👇 7. THỨ TỰ QUAN TRỌNG: Authentication luôn phải đứng TRƯỚC Authorization
+// 👇 7. THỨ TỰ QUAN TRỌNG
 app.UseAuthentication();
 app.UseAuthorization();
 
