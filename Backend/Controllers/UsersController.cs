@@ -30,44 +30,42 @@ namespace Backend.Controllers
         {
             try
             {
-                // 1. Kiểm tra mật khẩu khớp (Đã comment theo yêu cầu)
-                /*
-                if (dto.Password != dto.RetypePassword)
-                    return BadRequest("Mật khẩu xác nhận không khớp!");
-                */
-
-                // 2. Kiểm tra username tồn tại
+                // 1. Kiểm tra username tồn tại
                 if (await _context.Users.AnyAsync(u => u.Username == dto.Username))
                     return BadRequest("Tên tài khoản đã tồn tại!");
 
-                // 3. Kiểm tra xem Role USER (Id = 2) có tồn tại trong DB chưa
-                // ✅ Đã sửa: Dùng 2L để khớp kiểu dữ liệu long
-                var defaultRole = await _context.Roles.FindAsync(2L);
+                // 2. TỰ ĐỘNG TÌM ROLE "USER" TRONG DB
+                // Không quan tâm ID là mấy, cứ dòng nào có tên là USER thì lấy
+                var defaultRole = await _context.Roles
+                    .FirstOrDefaultAsync(r => r.Name.ToUpper() == "USER");
+
                 if (defaultRole == null)
                 {
-                    return BadRequest("Hệ thống chưa cấu hình Role USER (ID=2). Vui lòng chèn Role vào DB trước!");
+                    return BadRequest("Lỗi hệ thống: Không tìm thấy quyền 'USER' trong DB. Vui lòng tạo Role USER trước!");
                 }
 
-                // 4. Map DTO sang Entity
+                // 3. Map DTO sang Entity
                 var user = new User
                 {
                     FullName = dto.FullName,
                     Username = dto.Username,
-                    Password = dto.Password,
+                    Password = dto.Password, // Lưu ý: thực tế nên Hash mật khẩu
                     PhoneNumber = dto.PhoneNumber,
                     Address = dto.Address,
-                    RoleId = 2L, // ✅ Đã sửa: Dùng 2L cho kiểu dữ liệu long
+                    DateOfBirth = dto.DateOfBirth,
+                    RoleId = defaultRole.Id, // ✅ Lấy ID thực tế từ dòng tìm được
                     IsActive = true
                 };
 
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
 
-                return Ok(new { message = "Đăng ký thành công tài khoản USER!", username = user.Username });
+                return Ok(new { message = "Đăng ký thành công!", role = defaultRole.Name });
             }
             catch (Exception e)
             {
-                return BadRequest(e.Message);
+                // In ra lỗi chi tiết để debug nếu cần
+                return BadRequest(e.InnerException?.Message ?? e.Message);
             }
         }
 
@@ -137,7 +135,7 @@ namespace Backend.Controllers
             }
         }
 
-        // 4. Xóa người dùng (DELETE: api/users/{id})
+        // 4. Xóa người dùng
         [HttpDelete("{id}")]
         [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> DeleteUser(long id)
@@ -150,7 +148,7 @@ namespace Backend.Controllers
             return Ok(new { message = "Xóa người dùng thành công" });
         }
 
-        // 5. Cập nhật thông tin (PUT: api/users/{id})
+        // 5. Cập nhật thông tin
         [HttpPut("{id}")]
         [Authorize(Roles = "ADMIN")]
         public async Task<IActionResult> UpdateUser(long id, [FromBody] User updatedData)
@@ -168,7 +166,6 @@ namespace Backend.Controllers
             return Ok(new { message = "Cập nhật thành công" });
         }
 
-        // 👇 HÀM TẠO TOKEN
         private string GenerateJwtToken(User user)
         {
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
