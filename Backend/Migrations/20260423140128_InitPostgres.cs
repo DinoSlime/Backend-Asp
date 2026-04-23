@@ -1,12 +1,13 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
 namespace Backend.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class InitPostgres : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -16,10 +17,10 @@ namespace Backend.Migrations
                 columns: table => new
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    created_at = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    updated_at = table.Column<DateTime>(type: "datetime2", nullable: true)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -31,8 +32,8 @@ namespace Backend.Migrations
                 columns: table => new
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    name = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -44,14 +45,14 @@ namespace Backend.Migrations
                 columns: table => new
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    name = table.Column<string>(type: "nvarchar(350)", maxLength: 350, nullable: false),
-                    price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    thumbnail = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    description = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    name = table.Column<string>(type: "character varying(350)", maxLength: 350, nullable: false),
+                    price = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
+                    thumbnail = table.Column<string>(type: "text", nullable: true),
+                    description = table.Column<string>(type: "varchar(200)", nullable: true),
                     category_id = table.Column<long>(type: "bigint", nullable: false),
-                    created_at = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    updated_at = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -69,19 +70,19 @@ namespace Backend.Migrations
                 columns: table => new
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    fullname = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    username = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    phone_number = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
-                    address = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    password = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    is_active = table.Column<bool>(type: "bit", nullable: false),
-                    date_of_birth = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    facebook_account_id = table.Column<int>(type: "int", nullable: false),
-                    google_account_id = table.Column<int>(type: "int", nullable: false),
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    fullname = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    username = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    phone_number = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: false),
+                    address = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    password = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    is_active = table.Column<bool>(type: "boolean", nullable: false),
+                    date_of_birth = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    facebook_account_id = table.Column<int>(type: "integer", nullable: false),
+                    google_account_id = table.Column<int>(type: "integer", nullable: false),
                     role_id = table.Column<long>(type: "bigint", nullable: false),
-                    created_at = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    updated_at = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -99,11 +100,11 @@ namespace Backend.Migrations
                 columns: table => new
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    size = table.Column<int>(type: "int", nullable: false),
-                    color = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    image_url = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    stock = table.Column<int>(type: "int", nullable: false),
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    size = table.Column<int>(type: "integer", nullable: false),
+                    color = table.Column<string>(type: "text", nullable: false),
+                    image_url = table.Column<string>(type: "text", nullable: true),
+                    stock = table.Column<int>(type: "integer", nullable: false),
                     product_id = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
@@ -122,19 +123,19 @@ namespace Backend.Migrations
                 columns: table => new
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    fullname = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    email = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    phone_number = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    address = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    note = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    order_date = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    status = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    total_money = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    payment_method = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    fullname = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    email = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    phone_number = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    address = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    note = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    order_date = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    status = table.Column<string>(type: "text", nullable: true),
+                    total_money = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
+                    payment_method = table.Column<string>(type: "text", nullable: false),
                     user_id = table.Column<long>(type: "bigint", nullable: true),
-                    created_at = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    updated_at = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -151,13 +152,13 @@ namespace Backend.Migrations
                 columns: table => new
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     order_id = table.Column<long>(type: "bigint", nullable: false),
                     product_id = table.Column<long>(type: "bigint", nullable: false),
                     variant_id = table.Column<long>(type: "bigint", nullable: false),
-                    price = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    number_of_products = table.Column<int>(type: "int", nullable: false),
-                    total_money = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
+                    price = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
+                    number_of_products = table.Column<int>(type: "integer", nullable: false),
+                    total_money = table.Column<decimal>(type: "numeric(18,2)", nullable: false)
                 },
                 constraints: table =>
                 {

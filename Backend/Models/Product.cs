@@ -19,7 +19,7 @@ namespace Backend.Models
         // 👇 Thêm dấu ? để cho phép rỗng khi chưa upload ảnh
         public string? Thumbnail { get; set; }
 
-        [Column("description", TypeName = "nvarchar(max)")]
+        [Column("description", TypeName = "varchar(200)")]
         // 👇 Thêm dấu ? để cho phép rỗng
         public string? Description { get; set; }
 

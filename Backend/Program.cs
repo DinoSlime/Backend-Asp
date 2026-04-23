@@ -11,7 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // 👇 1. ĐĂNG KÝ DATABASE (DbContext)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // 👇 2. CẤU HÌNH CLOUDINARY
 var cloudinaryAccount = new Account(
