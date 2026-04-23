@@ -81,12 +81,13 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+// ĐOẠN CODE MỚI (Mở khóa Swagger mọi lúc mọi nơi)
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    // Cấu hình thêm dòng này để nó load thẳng vào trang chủ luôn nếu thích
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "API Bán Giày V1");
+});
 
 app.UseHttpsRedirection();
 
